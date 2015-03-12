@@ -1,14 +1,17 @@
 -module(global_changes_hooks_tests).
 
+-behaviour(global_changes_plugin).
+
 -include_lib("couch/include/couch_eunit.hrl").
 -include_lib("couch/include/couch_db.hrl").
 
--export([allowed_owner/2]).
+-export([init/1, handle_info/2, handle_error/4, terminate/2]).
+-export([validate_and_maybe_overwrite_user/2]).
 
 -define(t2l(V), lists:flatten(io_lib:format("~p", [V]))).
 
 start() ->
-    Ctx = test_util:start_couch([chttpd]),
+    Ctx = test_util:start_couch([chttpd, global_changes]),
     DbName = ?tempdb(),
     ok = fabric:create_db(DbName, [?ADMIN_CTX]),
     application:set_env(global_changes, dbname, DbName),
@@ -26,20 +29,37 @@ setup(default) ->
     get_host();
 setup(A) ->
     Host = setup(default),
-    ok = config:set("global_changes", "allowed_owner",
-        ?t2l({?MODULE, allowed_owner, A}), false),
+    ok = global_changes_plugin:register_handler(?MODULE, [A]),
     Host.
 
 teardown(_) ->
     delete_admin("admin"),
-    config:delete("global_changes", "allowed_owner", false),
+    global_changes_plugin:unregister_handler(?MODULE),
     ok.
 
-allowed_owner(Req, "throw") ->
-    throw({unauthorized, <<"Exception thrown.">>});
-allowed_owner(Req, "pass") ->
-    "super".
+%% ------------------------------------------------------------------
+%% Plugin handler
+%% ------------------------------------------------------------------
+init([Case]) ->
+    {ok, Case}.
 
+handle_info(_, State) ->
+    {noreply, State}.
+
+handle_error(Function, Reason, Args, State) ->
+    ok.
+
+terminate(Reason, State) ->
+    ok.
+
+validate_and_maybe_overwrite_user(Req, "throw") ->
+    throw({unauthorized, <<"Exception thrown.">>});
+validate_and_maybe_overwrite_user(Req, "pass") ->
+    {"super", "pass"}.
+
+%% ------------------------------------------------------------------
+%% Test cases
+%% ------------------------------------------------------------------
 allowed_owner_hook_test_() ->
     {
         "Check allowed_owner hook",
