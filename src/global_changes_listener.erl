@@ -154,7 +154,7 @@ handle_info(_Msg, State) ->
     maybe_send_updates(State).
 
 
--spec group_updates_by_node(binary(), [binary()]) -> dict().
+-spec group_updates_by_node(binary(), [binary()]) -> dict:dict().
 group_updates_by_node(DbName, Updates) ->
     lists:foldl(fun(Key, OuterAcc) ->
         Shards = mem3:shards(DbName, Key),
