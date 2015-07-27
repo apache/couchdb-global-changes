@@ -25,6 +25,7 @@ start_link() ->
 
 init([]) ->
     global_changes_config_listener:subscribe(),
+    global_changes_plugin:register_plugin(),
     {ok, {
         {one_for_one, 5, 10}, [
             {

@@ -13,7 +13,10 @@
 {application, global_changes, [
     {description, "_changes-like feeds for multiple DBs"},
     {vsn, git},
-    {registered, [global_changes_config_listener, global_changes_server]},
+    {registered, [
+        global_changes_config_listener,
+        global_changes_server,
+        global_changes_plugin]},
     {applications, [
         kernel,
         stdlib,

@@ -41,9 +41,9 @@ handle_global_changes_req(#httpd{method='GET'}=Req) ->
     Limit = couch_util:get_value(limit, Options),
     %Options1 = lists:keydelete(limit, 1, Options),
     Options1 = Options,
-    Owner = allowed_owner(Req),
+    User = validate_and_maybe_overwrite_user(Req),
     Acc = #acc{
-        username=Owner,
+        username=User,
         feed=Feed,
         resp=Req,
         heartbeat_interval=Heartbeat,
@@ -240,13 +240,12 @@ to_non_neg_int(Value) ->
         throw({bad_request, invalid_integer})
     end.
 
-allowed_owner(Req) ->
-    case config:get("global_changes", "allowed_owner", undefined) of
-    undefined ->
-        chttpd:verify_is_server_admin(Req),
-        admin;
-    SpecStr ->
-        {ok, {M, F, A}} = couch_util:parse_term(SpecStr),
-        couch_util:validate_callback_exists(M, F, 2),
-        M:F(Req, A)
+validate_and_maybe_overwrite_user(Req) ->
+    case global_changes_plugin:validate_and_maybe_overwrite_user(Req) of
+        {error, Reason} ->
+            throw(Reason);
+        User when is_binary(User) ->
+            User;
+        ok ->
+            chttpd:verify_is_server_admin(Req)
     end.
