@@ -12,7 +12,7 @@
 
 -module(global_changes_httpd_handlers).
 
--export([url_handler/1, db_handler/1, design_handler/1]).
+-export([url_handler/1, db_handler/1, design_handler/1, endpoints/1]).
 
 url_handler(<<"_db_updates">>) -> fun global_changes_httpd:handle_global_changes_req/1;
 url_handler(_) -> no_match.
@@ -20,3 +20,21 @@ url_handler(_) -> no_match.
 db_handler(_) -> no_match.
 
 design_handler(_) -> no_match.
+
+endpoints(url_handler) ->
+    [
+        <<"_db_updates">>
+    ];
+endpoints(db_handler) ->
+    [];
+endpoints(design_handler) ->
+    [].
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+global_changes_endpoints_test_() ->
+    Apps = [couch_epi, global_changes],
+    chttpd_httpd_handlers_test_util:endpoints_test(global_changes, ?MODULE, Apps).
+
+-endif.
